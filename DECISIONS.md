@@ -7,66 +7,41 @@ Three specific technical decisions made during this project, including what was 
 ## 1. Process Management: Docker Compose over PM2 or systemd
 
 ### What I considered
-
-- **PM2** — the most common choice for Node.js apps. Easy to set up, has `pm2 startup` for reboot persistence, and integrates with the host's process tree directly.
-- **systemd** — the Linux-native option. Robust, zero overhead, and every modern distro ships it. Requires writing a unit file and managing the app as a host process.
-- **Docker Compose** — containers for both the app and Nginx, with `restart: always` providing auto-restart and reboot resilience.
+- **PM2** — a popular process manager for Node.js apps with built-in restart and startup features
+- **systemd** — the Linux-native option, robust and available on every modern distro
+- **Docker Compose** — containers for both the app and Nginx, with `restart: always` for auto-restart and reboot resilience. It also supports `restart: unless-stopped` but `restart: always` was chosen since it ensures the app comes back up even after a full VM reboot, which is a requirement for this exam.
 
 ### What I chose
-
 **Docker Compose**
 
 ### Why
-
-Docker Compose solves more than just process management — it solves the entire deployment environment. By containerising both Next.js and Nginx together:
-
-- The app runs identically on any Linux VM regardless of what's installed on the host (no Node version conflicts, no global npm packages)
-- Nginx and Next.js are wired together via Docker's internal DNS (`nextjs:3000`) without exposing the app port to the outside
-- The named volume for SQLite is declared in the same file as everything else, making the whole setup self-documenting
-- `restart: always` handles both crash recovery and reboot resilience in one line
-
-PM2 would've been simpler for just the Node process, but then I'd still need to separately manage Nginx on the host and worry about the host's Node version. Systemd is excellent but requires more manual configuration and doesn't help with Nginx or environment isolation.
+I chose Docker because I am already familiar with containers and how they work. For me it is much cleaner compared to systemd and PM2 — everything is defined in one `docker-compose.yml` file, including the app, Nginx, and the database volume. I have more hands-on experience with Docker compared to the other two options, which made it easier to set up, debug, and explain.
 
 ---
 
-## 2. Database: better-sqlite3 over Prisma with SQLite
+## 2. Reverse Proxy: Nginx over Caddy
 
 ### What I considered
-
-- **Prisma with SQLite** — an ORM with a schema file, type-safe client, and migration tooling. Great for larger projects where you want schema versioning and abstract queries.
-- **better-sqlite3** — a low-level synchronous SQLite binding. Direct SQL, zero abstraction, very fast.
+- **Caddy** — a modern reverse proxy with automatic HTTPS and a simpler config syntax --> I actually just googled this one, but as far as I know, this one works the same as Nginx, I dont just know yet if it's lighter than Nginx. But I sticked to Nginx since Nginx is more popular to use and have wider documentation.
+- **Nginx** — a popular reverse proxy that is widely used in production environments
 
 ### What I chose
+**Nginx**
 
+### Why
+I chose Nginx because I already have experience with how reverse proxies work, particularly from using Apache before. Nginx and Apache share similar concepts — virtual hosts, proxying, and header management — so the transition was straightforward. I was confident I could configure it correctly and explain it, which was important given the exam requirement of understanding everything submitted.
+
+---
+
+## 3. Database Library: better-sqlite3 over Prisma
+
+### What I considered
+- **Prisma with SQLite** — an ORM with a schema file, type-safe client, and migration tooling. Good for larger projects with complex relations
+- **better-sqlite3** — a lightweight, synchronous SQLite binding with direct SQL queries.
+
+### What I chose
 **better-sqlite3**
 
 ### Why
+I chose better-sqlite3 because I wanted to be familiar with what I was using and be able to explain it clearly. Prisma adds a lot of abstraction — schema files, migrations, generated clients — which can be harder to explain if you are not deeply familiar with it. With better-sqlite3, the SQL queries are written directly and are easy to read and understand. For a small project like this URL shortener with only one table, better-sqlite3 was the right fit.
 
-This app has two tables at most and four SQL statements total. Pulling in Prisma (which adds a code-generation step, a schema file, a migrations folder, and a ~200ms startup time to generate the client) would be significant over-engineering for a URL shortener.
-
-`better-sqlite3`'s synchronous API is actually an advantage in Next.js Server Components and API routes — no need to `await` every query, and there's no risk of concurrent write errors since SQLite handles that at the file level with WAL mode enabled.
-
-If this app were to grow into something with complex relations and team members unfamiliar with SQL, Prisma would become the right choice.
-
----
-
-## 3. Next.js Build Mode: standalone output over a regular build
-
-### What I considered
-
-- **Standard build (`next build`)** — outputs to `.next/`, but requires the full `node_modules` to be present at runtime. In Docker this means either copying all of `node_modules` into the final image or running `npm install` at runtime — both result in very large images (~800MB+).
-- **Standalone output (`output: 'standalone'`)** — Next.js traces exactly which files are needed and copies them into `.next/standalone`, producing a self-contained `server.js` that needs no `node_modules` at all.
-
-### What I chose
-
-**Standalone output**
-
-### Why
-
-The Dockerfile uses a multi-stage build: install deps → build → copy only the standalone output into the final runner image. This drops the final image size from ~800MB to ~200MB. A smaller image means:
-
-- Faster deploys (less to push/pull)
-- Smaller attack surface
-- Less disk usage on the VM
-
-The standalone output is the officially recommended approach for containerised Next.js deployments and pairs naturally with the multi-stage Dockerfile pattern.
