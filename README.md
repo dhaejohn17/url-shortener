@@ -1,68 +1,45 @@
 # URL Shortener
 
-A simple URL shortener built with Next.js 15 (App Router), SQLite via `better-sqlite3`, and deployed with Docker Compose + Nginx.
+A simple URL shortener built and deployed by **Dhaene John Balbastro** as part of a Software Engineer Take-Home Exam.
 
-## Features
+This project was an enjoyable deployment experience and a great opportunity for growth
 
-- **Shorten URLs** — paste a long URL, get a short code back
+---
+
+## What It Does
+
+- **Shorten URLs** — paste a long URL and get a short code back
 - **Redirect** — visiting `/<code>` does an HTTP 302 redirect to the original URL
 - **Click tracking** — each redirect increments a click counter
 - **Admin dashboard** — password-protected page listing all URLs and click counts
 - **Persistent storage** — SQLite database stored in a Docker volume (survives reboots)
-- **Reboot resilient** — Docker's `restart: always` policy keeps the app alive
+- **Reboot resilient** — Docker's `restart: always` keeps the app alive after VM reboots
+
+---
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 15 (App Router) |
+| Framework | Next.js 16 (App Router) |
 | Language | TypeScript |
 | Database | SQLite via `better-sqlite3` |
 | Reverse Proxy | Nginx (Alpine) |
-| Container | Docker + Docker Compose |
+| Containers | Docker + Docker Compose |
+| Server | Ubuntu 24.04 LTS |
 
-## Local Development
+---
 
-### Prerequisites
-- Node.js 20+
-- npm
+## Why Docker?
 
-### Setup
+Docker was the MVP of this deployment. It made everything cleaner and easier to manage:
 
-```bash
-# Clone the repo
-git clone <repo-url>
-cd url-shortener
+- The app and Nginx run as separate containers but communicate internally
+- The SQLite database is stored in a named volume that persists across reboots
+- `restart: always` means the app auto-recovers from crashes and VM reboots
+- The entire setup is defined in one `docker-compose.yml` file — easy to read and explain
 
-# Install dependencies
-npm install
-
-# Copy env file and set your admin password
-cp .env.example .env.local
-# Edit .env.local and set ADMIN_PASSWORD
-
-# Run dev server
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-### Running with Docker Compose
-
-```bash
-# Copy and configure environment
-cp .env.example .env
-nano .env   # set ADMIN_PASSWORD
-
-# Build and start
-docker compose up -d --build
-
-# View logs
-docker compose logs -f
-
-# Stop
-docker compose down
-```
+---
 
 ## Project Structure
 
@@ -70,27 +47,29 @@ docker compose down
 url-shortener/
 ├── src/
 │   ├── app/
-│   │   ├── [code]/page.tsx        # Redirect handler
-│   │   ├── admin/page.tsx         # Admin dashboard (client)
+│   │   ├── [code]/route.ts         # HTTP 302 redirect handler
+│   │   ├── admin/page.tsx          # Admin dashboard
 │   │   ├── api/
-│   │   │   ├── shorten/route.ts   # POST /api/shorten
-│   │   │   ├── admin/urls/route.ts# GET  /api/admin/urls
-│   │   │   └── health/route.ts    # GET  /api/health
+│   │   │   ├── shorten/route.ts    # POST /api/shorten
+│   │   │   ├── admin/urls/route.ts # GET  /api/admin/urls
+│   │   │   └── health/route.ts     # GET  /api/health
 │   │   ├── layout.tsx
-│   │   ├── page.tsx               # Home page
+│   │   ├── page.tsx                # Home page
 │   │   └── globals.css
 │   └── lib/
-│       └── db.ts                  # SQLite setup & helpers
+│       └── db.ts                   # SQLite setup & helpers
 ├── nginx/
-│   └── nginx.conf
-├── Dockerfile
-├── docker-compose.yml
-├── .env.example
-└── docs/
-    ├── DEPLOYMENT.md
-    ├── DECISIONS.md
-    └── AI_USAGE.md
+│   └── nginx.conf                  # Reverse proxy config
+├── Dockerfile                      # Multi-stage build
+├── docker-compose.yml              # App + Nginx + Volume
+├── .env.example                    # Environment variable template
+├── README.md
+├── DEPLOYMENT.md
+├── DECISIONS.md
+└── AI_USAGE.md
 ```
+
+---
 
 ## Environment Variables
 
@@ -99,6 +78,30 @@ url-shortener/
 | `ADMIN_PASSWORD` | Password for the `/admin` page | Yes |
 | `DB_DIR` | Directory for the SQLite file (default: `./data`) | No |
 
-## Admin Access
+---
 
-Navigate to `/admin` and enter the password set in `ADMIN_PASSWORD`.
+## Running Locally
+
+```bash
+# Clone the repo
+git clone https://github.com/dhaejohn17/url-shortener.git
+cd url-shortener
+
+# Copy and configure environment
+cp .env.example .env
+nano .env  # set ADMIN_PASSWORD
+
+# Build and start
+docker compose up -d --build
+
+# Open in browser
+http://localhost
+```
+
+---
+
+## Live Demo
+
+- **Public URL:** http://35.188.109.30
+- **Admin page:** http://35.188.109.30/admin
+
