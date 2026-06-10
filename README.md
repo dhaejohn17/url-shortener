@@ -1,6 +1,6 @@
 # URL Shortener
 
-A simple URL shortener built and deployed by **Dhaene John Balbastro** as part of a Software Engineer Take-Home Exam.
+A simple URL shortener built and deployed by **ME wis.d / dhaejohn17** as part of a Software Engineer Take-Home Exam.
 
 This project was an enjoyable deployment experience and a great opportunity for growth
 
