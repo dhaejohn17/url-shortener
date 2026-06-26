@@ -100,8 +100,3 @@ http://localhost
 
 ---
 
-## Live Demo
-
-- **Public URL:** http://35.188.109.30
-- **Admin page:** http://35.188.109.30/admin
-
